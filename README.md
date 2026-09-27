@@ -142,6 +142,8 @@ require("difftastic-nvim").setup({
     download = false,              -- Auto-download pre-built binary (default: false)
     vcs = "jj",                    -- "jj" (default) or "git"
     highlight_mode = "treesitter", -- "treesitter" (default) or "difftastic"
+    highlight_style = "line",     -- "line" (default) or "range": whole-line tint vs token ranges only
+    bg_opacity = 0.38,            -- blend factor for token background colors (0-1)
     hunk_wrap_file = true,          -- Next hunk at last hunk goes to next file
     scroll_to_first_hunk = true,  -- Auto-scroll to first hunk after opening a file (default: true)
     snacks_picker = {
@@ -184,18 +186,27 @@ The `highlight_mode` option controls how syntax highlighting is applied:
 - **`treesitter`** (default): Full syntax highlighting via Neovim's treesitter. Changes are shown with background colors.
 - **`difftastic`**: Minimal highlighting like the CLI. No syntax colors; changes are shown with foreground colors (green/red) to make diffs more prominent.
 
+### Highlight Styles
+
+The `highlight_style` option controls how fully-changed lines are painted in `treesitter` mode:
+
+- **`line`** (default): Fully-changed lines get a lighter whole-line tint (`DifftAddedLine`/`DifftRemovedLine`) under the token range highlights.
+- **`range`**: Only the changed token ranges get the stronger token background. Fully-changed lines get the token background across the whole line.
+
 ## Highlight Groups
 
-Highlights automatically inherit from your colorscheme's semantic groups (`Added`, `Removed`, `Directory`, `Normal`) and update when you switch themes. Strong background colors are derived by blending the foreground color with your `Normal` background at 38% opacity. Line background colors use half of that opacity for a lighter full-line context.
+Highlights automatically inherit from your colorscheme's semantic groups (`Added`, `Removed`, `Directory`, `Normal`) and update when you switch themes. Background colors are derived by blending a base foreground color with your `Normal` background at `bg_opacity` (38% by default). The base groups `DifftAddedBase`/`DifftRemovedBase` feed the blend; they fall back to `Added`/`Removed` when not set, so themes can tune text colors and blend inputs independently. Line background colors use half of that opacity for a lighter full-line context.
 
 **Treesitter mode** (background colors):
 
 | Group | Default | Description |
 |-------|---------|-------------|
-| `DifftAdded` | Derived from `Added` | Added lines background |
-| `DifftRemoved` | Derived from `Removed` | Removed lines background |
-| `DifftAddedLine` | Derived from `Added` | Lighter added line background |
-| `DifftRemovedLine` | Derived from `Removed` | Lighter removed line background |
+| `DifftAdded` | Derived from `DifftAddedBase` | Added token background |
+| `DifftRemoved` | Derived from `DifftRemovedBase` | Removed token background |
+| `DifftAddedLine` | Derived from `DifftAddedBase` | Lighter added line background |
+| `DifftRemovedLine` | Derived from `DifftRemovedBase` | Lighter removed line background |
+| `DifftAddedBase` | Falls back to `Added` | Optional blend input for added backgrounds, set from your colorscheme |
+| `DifftRemovedBase` | Falls back to `Removed` | Optional blend input for removed backgrounds, set from your colorscheme |
 
 **Difftastic mode** (foreground colors):
 

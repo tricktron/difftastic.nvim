@@ -13,6 +13,8 @@ M.config = {
     vcs = "jj",
     --- Highlight mode: "treesitter" (full syntax) or "difftastic" (no syntax, colored changes only)
     highlight_mode = "treesitter",
+    --- Highlight style: "line" (whole-line tint under token ranges, default) or "range" (token ranges only)
+    highlight_style = "line",
     --- When true, next_hunk at last hunk wraps to next file (and prev_hunk to prev file)
     hunk_wrap_file = true,
     --- When true, scroll to first hunk after opening a file
@@ -105,6 +107,9 @@ function M.setup(opts)
     end
     if opts.highlight_mode then
         M.config.highlight_mode = opts.highlight_mode
+    end
+    if opts.highlight_style then
+        M.config.highlight_style = opts.highlight_style
     end
     if opts.hunk_wrap_file ~= nil then
         M.config.hunk_wrap_file = opts.hunk_wrap_file

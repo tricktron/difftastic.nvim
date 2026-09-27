@@ -77,6 +77,31 @@ local function set_line_background(buf, ns, line, hl_group, priority)
     })
 end
 
+local function range_covers(highlights, col)
+    for _, hl in ipairs(highlights) do
+        if col >= hl.start and col < hl["end"] then
+            return true
+        end
+    end
+    return false
+end
+
+local function covers_all_non_whitespace(content, highlights)
+    local has_non_whitespace = false
+
+    for col = 0, #content - 1 do
+        local char = content:sub(col + 1, col + 1)
+        if not char:match("%s") then
+            has_non_whitespace = true
+            if not range_covers(highlights, col) then
+                return false
+            end
+        end
+    end
+
+    return has_non_whitespace
+end
+
 local function set_range_highlight(buf, ns, line, start_col, end_col, hl_group, priority)
     if start_col >= end_col then
         return
@@ -90,16 +115,29 @@ local function set_range_highlight(buf, ns, line, start_col, end_col, hl_group, 
     })
 end
 
-local function apply_diff_highlights(buf, ns, line, highlights, range_hl)
+local function apply_diff_highlights(buf, ns, line, content, highlights, range_hl, line_hl, range_only)
     if #highlights == 0 then
         return
     end
 
     if #highlights == 1 and is_full_line_highlight(highlights[1]) then
-        -- Created/deleted files arrive as a whole-line marker; the whole line
-        -- is the change, so it gets the token background.
-        set_line_background(buf, ns, line, range_hl, 200)
+        if range_only then
+            -- Created/deleted files arrive as a whole-line marker. The whole
+            -- line is the change, so it gets the token background.
+            set_line_background(buf, ns, line, range_hl, 200)
+        else
+            set_line_background(buf, ns, line, line_hl, 100)
+        end
         return
+    end
+
+    if not range_only then
+        if covers_all_non_whitespace(content, highlights) then
+            set_line_background(buf, ns, line, line_hl, 100)
+            return
+        end
+
+        set_line_background(buf, ns, line, line_hl, 100)
     end
 
     for _, hl in ipairs(highlights) do
@@ -185,13 +223,16 @@ function M.render(state, file)
     -- difftastic mode: foreground colors (like CLI, bold)
     local removed_hl = use_treesitter and "DifftRemoved" or "DifftRemovedFg"
     local added_hl = use_treesitter and "DifftAdded" or "DifftAddedFg"
+    local range_only = config.highlight_style == "range"
+    local removed_line_hl = "DifftRemovedLine"
+    local added_line_hl = "DifftAddedLine"
 
     -- Apply diff highlights (additions/removals)
     for i, row in ipairs(rows) do
         local line = i - 1
 
-        apply_diff_highlights(state.left_buf, left_ns, line, row.left.highlights, removed_hl)
-        apply_diff_highlights(state.right_buf, right_ns, line, row.right.highlights, added_hl)
+        apply_diff_highlights(state.left_buf, left_ns, line, row.left.content, row.left.highlights, removed_hl, removed_line_hl, range_only)
+        apply_diff_highlights(state.right_buf, right_ns, line, row.right.content, row.right.highlights, added_hl, added_line_hl, range_only)
 
         if row.left.is_filler then
             vim.api.nvim_buf_set_extmark(state.left_buf, left_ns, line, 0, {

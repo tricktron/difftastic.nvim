@@ -85,15 +85,17 @@ local function apply_highlights(overrides)
     local added_fg = get_fg("Added") or "#9ece6a"
     local removed_fg = get_fg("Removed") or "#f7768e"
     -- Token bg blend inputs. Themes that tune Added/Removed for text (diffstat
-    -- chips, tree icons) break the blend. DifftAddedBase/DifftRemovedBase give
-    -- the blend its own input. When the groups are absent, the blend falls
-    -- back to Added/Removed.
+    -- chips, tree icons) break the blend, so the blend reads its own input
+    -- groups and falls back to Added/Removed when they are absent.
     local blend_added_fg = get_fg("DifftAddedBase") or added_fg
     local blend_removed_fg = get_fg("DifftRemovedBase") or removed_fg
     local changed_fg = get_fg("Changed") or get_fg("Identifier") or "#7aa2f7"
 
     local added_bg = blend(blend_added_fg, normal_bg, M.bg_opacity)
     local removed_bg = blend(blend_removed_fg, normal_bg, M.bg_opacity)
+    local line_bg_opacity = M.bg_opacity * 0.5
+    local added_line_bg = blend(blend_added_fg, normal_bg, line_bg_opacity)
+    local removed_line_bg = blend(blend_removed_fg, normal_bg, line_bg_opacity)
     local normal_blend = blend(normal_fg, normal_bg, M.bg_opacity)
     local tree_cursor_bg = blend(normal_fg, normal_bg, 0.14)
     local tree_panel_bg = blend(normal_fg, normal_bg, 0.03)
@@ -102,6 +104,8 @@ local function apply_highlights(overrides)
         -- Background highlights (blended from fg colors)
         DifftAdded = { bg = added_bg },
         DifftRemoved = { bg = removed_bg },
+        DifftAddedLine = { bg = added_line_bg },
+        DifftRemovedLine = { bg = removed_line_bg },
         DifftTreeCurrent = { bg = normal_blend, bold = true },
         DifftTreeNormal = { bg = tree_panel_bg },
         DifftTreeCursorLine = { bg = tree_cursor_bg },
