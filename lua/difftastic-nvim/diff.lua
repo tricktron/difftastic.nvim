@@ -67,16 +67,6 @@ local function is_full_line_highlight(hl)
     return hl.start == 0 and hl["end"] == -1
 end
 
-local function set_line_background(buf, ns, line, hl_group, priority)
-    vim.api.nvim_buf_set_extmark(buf, ns, line, 0, {
-        end_row = line + 1,
-        end_col = 0,
-        hl_eol = true,
-        hl_group = hl_group,
-        priority = priority,
-    })
-end
-
 local function range_covers(highlights, col)
     for _, hl in ipairs(highlights) do
         if col >= hl.start and col < hl["end"] then
@@ -100,6 +90,16 @@ local function covers_all_non_whitespace(content, highlights)
     end
 
     return has_non_whitespace
+end
+
+local function set_line_background(buf, ns, line, hl_group, priority)
+    vim.api.nvim_buf_set_extmark(buf, ns, line, 0, {
+        end_row = line + 1,
+        end_col = 0,
+        hl_eol = true,
+        hl_group = hl_group,
+        priority = priority,
+    })
 end
 
 local function set_range_highlight(buf, ns, line, start_col, end_col, hl_group, priority)
