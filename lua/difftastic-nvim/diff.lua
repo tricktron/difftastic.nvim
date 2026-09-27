@@ -67,31 +67,6 @@ local function is_full_line_highlight(hl)
     return hl.start == 0 and hl["end"] == -1
 end
 
-local function range_covers(highlights, col)
-    for _, hl in ipairs(highlights) do
-        if col >= hl.start and col < hl["end"] then
-            return true
-        end
-    end
-    return false
-end
-
-local function covers_all_non_whitespace(content, highlights)
-    local has_non_whitespace = false
-
-    for col = 0, #content - 1 do
-        local char = content:sub(col + 1, col + 1)
-        if not char:match("%s") then
-            has_non_whitespace = true
-            if not range_covers(highlights, col) then
-                return false
-            end
-        end
-    end
-
-    return has_non_whitespace
-end
-
 local function set_line_background(buf, ns, line, hl_group, priority)
     vim.api.nvim_buf_set_extmark(buf, ns, line, 0, {
         end_row = line + 1,
@@ -115,22 +90,17 @@ local function set_range_highlight(buf, ns, line, start_col, end_col, hl_group, 
     })
 end
 
-local function apply_diff_highlights(buf, ns, line, content, highlights, range_hl, line_hl)
+local function apply_diff_highlights(buf, ns, line, highlights, range_hl)
     if #highlights == 0 then
         return
     end
 
     if #highlights == 1 and is_full_line_highlight(highlights[1]) then
-        set_line_background(buf, ns, line, line_hl, 100)
+        -- Created/deleted files arrive as a whole-line marker; the whole line
+        -- is the change, so it gets the token background.
+        set_line_background(buf, ns, line, range_hl, 200)
         return
     end
-
-    if covers_all_non_whitespace(content, highlights) then
-        set_line_background(buf, ns, line, line_hl, 100)
-        return
-    end
-
-    set_line_background(buf, ns, line, line_hl, 100)
 
     for _, hl in ipairs(highlights) do
         set_range_highlight(buf, ns, line, hl.start, hl["end"], range_hl, 200)
@@ -211,19 +181,17 @@ function M.render(state, file)
     vim.api.nvim_buf_clear_namespace(state.right_buf, right_ns, 0, -1)
 
     -- Choose highlight groups based on mode
-    -- treesitter mode: background colors
+    -- treesitter mode: bg-only groups, syntax fg shows through the range
     -- difftastic mode: foreground colors (like CLI, bold)
     local removed_hl = use_treesitter and "DifftRemoved" or "DifftRemovedFg"
     local added_hl = use_treesitter and "DifftAdded" or "DifftAddedFg"
-    local removed_line_hl = "DifftRemovedLine"
-    local added_line_hl = "DifftAddedLine"
 
     -- Apply diff highlights (additions/removals)
     for i, row in ipairs(rows) do
         local line = i - 1
 
-        apply_diff_highlights(state.left_buf, left_ns, line, row.left.content, row.left.highlights, removed_hl, removed_line_hl)
-        apply_diff_highlights(state.right_buf, right_ns, line, row.right.content, row.right.highlights, added_hl, added_line_hl)
+        apply_diff_highlights(state.left_buf, left_ns, line, row.left.highlights, removed_hl)
+        apply_diff_highlights(state.right_buf, right_ns, line, row.right.highlights, added_hl)
 
         if row.left.is_filler then
             vim.api.nvim_buf_set_extmark(state.left_buf, left_ns, line, 0, {
