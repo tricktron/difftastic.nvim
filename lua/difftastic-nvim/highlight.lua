@@ -84,10 +84,16 @@ local function apply_highlights(overrides)
     local comment_fg = get_fg("Comment") or "#565f89"
     local added_fg = get_fg("Added") or "#9ece6a"
     local removed_fg = get_fg("Removed") or "#f7768e"
+    -- Token bg blend inputs. Themes that tune Added/Removed for text (diffstat
+    -- chips, tree icons) break the blend. DifftAddedBase/DifftRemovedBase give
+    -- the blend its own input. When the groups are absent, the blend falls
+    -- back to Added/Removed.
+    local blend_added_fg = get_fg("DifftAddedBase") or added_fg
+    local blend_removed_fg = get_fg("DifftRemovedBase") or removed_fg
     local changed_fg = get_fg("Changed") or get_fg("Identifier") or "#7aa2f7"
 
-    local added_bg = blend(added_fg, normal_bg, M.bg_opacity)
-    local removed_bg = blend(removed_fg, normal_bg, M.bg_opacity)
+    local added_bg = blend(blend_added_fg, normal_bg, M.bg_opacity)
+    local removed_bg = blend(blend_removed_fg, normal_bg, M.bg_opacity)
     local normal_blend = blend(normal_fg, normal_bg, M.bg_opacity)
     local tree_cursor_bg = blend(normal_fg, normal_bg, 0.14)
     local tree_panel_bg = blend(normal_fg, normal_bg, 0.03)
@@ -125,8 +131,11 @@ end
 
 --- Setup highlight groups with optional overrides.
 --- @param overrides table<string, vim.api.keyset.highlight>|nil User overrides
-function M.setup(overrides)
+--- @param bg_opacity number|nil Blend factor for token background highlights (0-1)
+function M.setup(overrides, bg_opacity)
     overrides = overrides or {}
+
+    if bg_opacity then M.bg_opacity = bg_opacity end
 
     -- Apply highlights now
     apply_highlights(overrides)

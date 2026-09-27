@@ -131,7 +131,7 @@ function M.setup(opts)
         M.config.snacks_picker = vim.tbl_extend("force", M.config.snacks_picker, opts.snacks_picker)
     end
 
-    highlight.setup(opts.highlights)
+    highlight.setup(opts.highlights, opts.bg_opacity)
     binary.ensure_exists(M.config.download)
 end
 
